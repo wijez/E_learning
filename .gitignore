@@ -1,0 +1,48 @@
+# Ignore the .env file for environment variables
+.env
+
+# Ignore Python bytecode files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore virtual environment folders
+venv/
+env/
+.venv/
+
+# Ignore IDE/editor config files (e.g., VSCode, PyCharm)
+.vscode/
+.idea/
+
+# Ignore system files (macOS, Windows)
+.DS_Store
+Thumbs.db
+
+# Ignore log files
+*.log
+
+# Ignore compiled code
+*.class
+*.dll
+*.exe
+
+# Ignore Docker files
+.docker/
+
+# Ignore dependency directories for JavaScript or Node.js projects
+node_modules/
+
+# Ignore dependency directories for Python
+*.egg-info/
+
+# Ignore build directories
+build/
+dist/
+
+# Ignore Docker-related files
+docker-compose.override.yml
+
+# Ignore compiled files
+*.o
+*.out
