@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-y+)#pic*p36y*4^91d_juwl@q^xop^ux54-l#m1s-($4$u$&kl
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-
+AUTH_USER_MODEL = 'app.Users'
 # Application definition
 
 INSTALLED_APPS = [
@@ -87,6 +87,11 @@ DATABASES = {
     }
 }
 
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
+}
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
