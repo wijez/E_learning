@@ -1,26 +1,11 @@
-# import uuid
-#
-# from django.db import models
-# from E_learning.app.contants import RoleEnum
-#
-#
-# # Create your models here.
-# class Users(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     name = models.CharField(max_length=50)
-#     image = models.ImageField(upload_to='user_images')
-#     email = models.EmailField(unique=True)
-#     password = models.CharField(max_length=128)
-#     role = models.CharField(default=RoleEnum.USER.value)
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-#
+
 #     def __str__(self):
 #         return f"{self.id} - {self.name} - {self.email} - {self.role}"
 
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Permission, Group
 from E_learning.app.contants import RoleEnum
+from E_learning.app.utils import generate_verification_code
 
 
 class CustomUserManager(BaseUserManager):
@@ -45,6 +30,7 @@ class Users(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=255)
     image = models.ImageField(upload_to='user_images/', null=True, blank=True)
     email = models.EmailField(unique=True)
+    verify_code = models.CharField(max_length=6, blank=True)
 
     # Add role with choices from RoleEnum
     role = models.CharField(
@@ -57,7 +43,7 @@ class Users(AbstractBaseUser, PermissionsMixin):
     updated_at = models.DateTimeField(auto_now=True)
 
     # Required fields for AbstractBaseUser
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
     groups = models.ManyToManyField(
@@ -78,3 +64,8 @@ class Users(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+    def save(self, *args, **kwargs):
+        if not self.verify_code:  # Chỉ tạo mã nếu verify_code chưa tồn tại
+            self.verify_code = generate_verification_code(6)
+        super().save(*args, **kwargs)
