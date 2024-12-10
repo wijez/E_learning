@@ -1,8 +1,10 @@
 from django.core.mail import send_mail
 from django.conf import settings
 
-
-def send_verification_email(email, verify_code):
+def send_verification_email(recipient_email, verification_code):
+    """
+    Gửi email xác thực đến người dùng.
+    """
     subject = 'Verify Your Email'
-    message = f'Your verification code is: {verify_code}'
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email])
+    message = f'Your verification code is: {verification_code}'
+    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [recipient_email])
