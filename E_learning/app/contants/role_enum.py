@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class RoleEnum(Enum):
+    SUPER_USER= "SUPER_USER"
     USER = "USER"
     ADMIN = "ADMIN"
     LECTURER = "LECTURER"

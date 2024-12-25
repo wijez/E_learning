@@ -15,3 +15,7 @@ class IsLecturer(IsRole):
 class IsUser(IsRole):
     def __init__(self):
         super().__init__([RoleEnum.USER])
+
+class IsSuperUser(IsRole):
+    def __init__(self):
+        super().__init__([RoleEnum.SUPER_USER])
