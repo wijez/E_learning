@@ -1,18 +1,23 @@
+from django.contrib.auth.hashers import verify_password
 from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, permissions
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+from yaml import serialize
 
 from E_learning.app.models import Users
 from E_learning.app.serializers import UsersSerializer, VerifyCodeSerializer
-from E_learning.app.serializers.auth_serializers import LoginSerializer, RegisterSerializer
+from E_learning.app.serializers.auth_serializers import LoginSerializer, RegisterSerializer, PasswordResetSerializer, \
+    PasswordResetVerifiedSerializer
 from E_learning.app.serializers.users_serializers import UserTokenSerializer
+from E_learning.app.utils import generate_verification_code
 from E_learning.app.utils.send_mail import send_verification_email
 
 
@@ -112,3 +117,36 @@ class GetMeView(APIView):
     def get(self, request):
         serializer = UserTokenSerializer(request.user)
         return Response(serializer.data)
+
+
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny, ]
+
+    @swagger_auto_schema(
+        request_body=PasswordResetSerializer,  # Ensure the serializer is passed to request_body
+        responses={status.HTTP_200_OK: openapi.Response('Verification code sent to email.'),
+                   status.HTTP_400_BAD_REQUEST: 'Validation errors'}
+    )
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response({"message": "Verification code sent to email."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ResetPasswordVerifyView(APIView):
+    permission_classes = [AllowAny, ]
+
+    @swagger_auto_schema(
+        request_body=PasswordResetVerifiedSerializer,
+        responses={status.HTTP_200_OK: 'Email verified successfully',
+                   status.HTTP_400_BAD_REQUEST: 'Verify_code error'}
+    )
+    def post(self, request):
+        serializer = PasswordResetVerifiedSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response({"message": "Password has been reset successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+

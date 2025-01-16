@@ -1,10 +1,15 @@
 from django.core.exceptions import ObjectDoesNotExist
-from rest_framework import exceptions, status
-from rest_framework.permissions import IsAdminUser
-from rest_framework.response import Response
+from django.db import models
+from django.template.context_processors import request
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import exceptions, status, permissions, serializers
+
 
 from ..contants import RoleEnum
-from ..security.permission import IsAdmin, IsUser, IsLecturer
+from ..security.permission import (
+    IsCourseOwnerOrInvitedLecturer,
+    IsLecturerPermission,
+    IsLecturerAdminOrSuperAdmin)
 from ..serializers.courses_serializers import CoursesSerializer
 from ..views.base_views import BaseUserViewSet
 from ..models import Courses
@@ -13,55 +18,25 @@ from ..models import Courses
 class CoursesViewSet(BaseUserViewSet):
     queryset = Courses.objects.all().order_by('created_at')
     serializer_class = CoursesSerializer
-    permission_classes = [IsAdmin,IsUser, IsLecturer, IsAdminUser]
+    permission_classes = [IsLecturerAdminOrSuperAdmin]
 
-    def get_queryset(self):
-        """
-        Lọc danh sách khóa học dựa trên vai trò của người dùng.
-        """
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        elif self.action == 'create':
+            return [permissions.IsAuthenticated(), IsLecturerPermission()]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            return [IsCourseOwnerOrInvitedLecturer(), IsLecturerAdminOrSuperAdmin()]
+        return super().get_permissions()
+
+    def filter_queryset(self, queryset):
         user = self.request.user
-        role = getattr(user, 'role', None)
 
-        if role == RoleEnum.ADMIN.value or role == RoleEnum.SUPER_USER.value:
-            return Courses.objects.all().order_by('created_at')
-        elif role == RoleEnum.LECTURER.value:
-            return Courses.objects.filter(user_id=user.id).order_by('created_at')
-        elif role == RoleEnum.USER.value:
-            return Courses.objects.filter(is_public=True).order_by('created_at')  # Chỉ lấy các khóa học công khai
-        return Courses.objects.none()
+        if user.role in [RoleEnum.ADMIN.value, RoleEnum.SUPER_USER.value]:
+            return Courses.objects.all()
 
-    def perform_create(self, serializer):
-        """
-        Kiểm tra quyền và tạo khóa học.
-        """
-        user = self.request.user
-        role = getattr(user, 'role', None)
-        if role not in [RoleEnum.ADMIN.value, RoleEnum.LECTURER.value, RoleEnum.SUPER_USER.value]:
-            raise exceptions.PermissionDenied("You do not have permission to create a course.")
-        serializer.save(user_id=user.id)
+        if user.role == RoleEnum.LECTURER.value:
+            return Courses.objects.filter(models.Q(user=user) | models.Q(invited_lecturers=user))
 
-    def perform_update(self, serializer):
-        """
-        Kiểm tra quyền và cập nhật khóa học.
-        """
-        user = self.request.user
-        role = getattr(user, 'role', None)
-        if role not in [RoleEnum.ADMIN.value, RoleEnum.LECTURER.value]:
-            raise exceptions.PermissionDenied("You do not have permission to update this course.")
-        serializer.save()
+        return Courses.objects.filter(is_public=True)
 
-    def destroy(self, request, *args, **kwargs):
-        """
-        Kiểm tra quyền và xóa khóa học.
-        """
-        user = self.request.user
-        role = getattr(user, 'role', None)
-
-        try:
-            course = self.get_object()
-        except ObjectDoesNotExist:
-            return Response({"detail": "Course not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        if role != RoleEnum.ADMIN.value:
-            raise exceptions.PermissionDenied("Only ADMIN can delete courses.")
-        return super().destroy(request, *args, **kwargs)

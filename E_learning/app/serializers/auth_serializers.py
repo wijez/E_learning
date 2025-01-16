@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from E_learning.app.models import Users
 from E_learning.app.serializers import UsersSerializer
 from E_learning.app.utils.send_mail import send_verification_email
+from E_learning.app.utils.validate_email import validate_username_or_email
 
 
 def validate_registration_data(email, username, password):
@@ -143,12 +144,33 @@ class LoginSerializer(serializers.Serializer):
 
 
 class PasswordResetSerializer(serializers.Serializer):
-    email = serializers.EmailField(max_length=255)
+    username_or_email = serializers.CharField(max_length=255)
+
+    def validate_username_or_email(self, value):
+        # Sử dụng validate_username_or_email để xác thực người dùng và lấy đối tượng user
+        user = validate_username_or_email(value)
+        # Gửi mã xác minh đến email của người dùng
+        send_verification_email(user.email, user.verify_code)
+        return value
 
 
 class PasswordResetVerifiedSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=40)
     password = serializers.CharField(max_length=128)
+
+    def validate(self, attrs):
+        code = attrs.get('code')
+        password = attrs.get('password')
+        try:
+            user = Users.objects.get(verify_code=code)
+        except Users.objects.DoesNotExist:
+            raise serializers.ValidationError({'code': 'Invalid verification code.'})
+
+        user.set_password(password)
+        user.verify_code = ''
+        user.save()
+
+        return attrs
 
 
 class PasswordChangeSerializer(serializers.Serializer):
