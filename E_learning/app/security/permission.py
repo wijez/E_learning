@@ -8,9 +8,14 @@ from E_learning.app.contants import RoleEnum
 class IsLecturerAdminOrSuperAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         user = request.user
-        return user.is_authenticated and getattr(user, 'role', None) in [
-            RoleEnum.LECTURER, RoleEnum.ADMIN, RoleEnum.SUPER_USER
-        ]
+        return (
+            user.is_authenticated and
+            getattr(user, 'role', None) in [
+                RoleEnum.LECTURER.value,
+                RoleEnum.ADMIN.value,
+                RoleEnum.SUPER_USER.value
+            ]
+        )
 
 class IsCourseOwnerOrInvitedLecturer(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):

@@ -1,24 +1,17 @@
-from django.contrib.auth.hashers import verify_password
-from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, permissions
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
-from yaml import serialize
 
-from E_learning.app.models import Users
 from E_learning.app.serializers import UsersSerializer, VerifyCodeSerializer
 from E_learning.app.serializers.auth_serializers import LoginSerializer, RegisterSerializer, PasswordResetSerializer, \
     PasswordResetVerifiedSerializer
 from E_learning.app.serializers.users_serializers import UserTokenSerializer
-from E_learning.app.utils import generate_verification_code
-from E_learning.app.utils.send_mail import send_verification_email
+
 
 
 class RegisterView(APIView):
@@ -105,7 +98,7 @@ class LogoutView(APIView):
             }, status=status.HTTP_200_OK)
 
         except TokenError as e:
-            return Response({"detail": "Invalid or expired token."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": f"Invalid or expired token `{e}`."}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

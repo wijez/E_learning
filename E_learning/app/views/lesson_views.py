@@ -1,9 +1,7 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import permissions, exceptions, status
-from rest_framework.decorators import permission_classes
+from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
 
 from E_learning.app.models import Lessons, Courses
 from E_learning.app.serializers.lessons_serializers import LessonsSerializer
