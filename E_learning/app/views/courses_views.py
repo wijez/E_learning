@@ -32,9 +32,6 @@ class CoursesViewSet(BaseUserViewSet):
             return [permissions.AllowAny()]
         elif self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated(), IsLecturerPermission()]
-        # elif self.action in ['update', 'partial_update', 'destroy']:
-        #     return [IsAuthenticated(),IsCourseOwnerOrInvitedLecturer(), IsLecturerAdminOrSuperAdmin()]
-        # return super().get_permissions()
         elif self.action in ['approve_course', 'view_course_details', 'list_pending_requests']:
             return [IsAuthenticated(), IsLecturerAdminOrSuperAdmin()]
         return super().get_permissions()

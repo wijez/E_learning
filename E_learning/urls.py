@@ -15,7 +15,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.template.defaulttags import url
 from django.urls import path, include
+from E_learning import views
+
+import E_learning
 from E_learning.app.urls import urlpatterns as api_urls
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
@@ -54,6 +58,15 @@ urlpatterns = [
     path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+
+    # vnpay
+    # path(r'^$', E_learning.views.index, name='index'),
+    # path(r'^payment$', E_learning.views.payment, name='payment'),
+    # path(r'^payment_ipn$', E_learning.views.payment_ipn, name='payment_ipn'),
+    # path(r'^payment_return$', E_learning.views.payment_return, name='payment_return'),
+    # path(r'^query$', E_learning.views.query, name='query'),
+    # path(r'^refund$', E_learning.views.refund, name='refund'),
+
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
