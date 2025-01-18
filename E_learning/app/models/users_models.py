@@ -1,7 +1,3 @@
-
-#     def __str__(self):
-#         return f"{self.id} - {self.name} - {self.email} - {self.role}"
-
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Permission, Group
 from E_learning.app.contants import RoleEnum
@@ -13,6 +9,10 @@ class CustomUserManager(BaseUserManager):
         if not email:
             raise ValueError('The Email field must be set')
         email = self.normalize_email(email)
+
+        if not extra_fields.get('username'):
+            extra_fields['username'] = email.split('@')[0]
+
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)

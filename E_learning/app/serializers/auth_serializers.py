@@ -1,9 +1,28 @@
 from django.contrib.auth import authenticate
-from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
-from django.core.exceptions import ValidationError
-from E_learning.app.models import Users
+from rest_framework.exceptions import ValidationError
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+from rest_framework_simplejwt.tokens import RefreshToken
 
+from E_learning.app.models import Users
+from E_learning.app.serializers import UsersSerializer
+from E_learning.app.utils.send_mail import send_verification_email
+from E_learning.app.utils.validate_email import validate_username_or_email
+
+
+def validate_registration_data(email, username, password):
+    # Kiểm tra email đã được đăng ký chưa
+    if Users.objects.filter(email=email).exists():
+        raise ValidationError({'email': 'This email is already registered.'})
+
+    # Kiểm tra username đã được sử dụng chưa
+    if Users.objects.filter(username=username).exists():
+        raise ValidationError({'username': 'This username is already taken.'})
+
+    # Kiểm tra độ dài password
+    if len(password) < 8:
+        raise ValidationError({'password': 'Password must be at least 8 characters long.'})
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True,
@@ -56,8 +75,28 @@ class VerifyCodeSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True,
                                    help_text="Required. The email address you registered with.")
     verify_code = serializers.CharField(required=True,
+                                        max_length=6,
                                         help_text="Required. The 6-digit verification code sent to your email.")
 
+    def validate(self, attrs):
+        email = attrs.get('email')
+        verify_code = attrs.get('verify_code')
+
+        try:
+            user = Users.objects.get(email=email, verify_code=verify_code)
+        except Users.DoesNotExist:
+            raise serializers.ValidationError({
+                'verify_code': 'Invalid verification code or email.'
+            })
+
+        # Update user details after validation
+        user.is_active = True
+        user.verify_code = ''
+        user.save()
+
+        # Add any additional information if needed
+        attrs['user'] = user  # Optional: Pass the user instance back if needed
+        return attrs
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -72,7 +111,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         user.set_password(validated_data['password'])
         user.save()
+        send_verification_email(user.email, user.verify_code)
         return user
+    def validate(self, attrs):
+        email = attrs.get("email")
+        username = attrs.get("username")
+        password = attrs.get('password')
+        validate_registration_data(email,username,password)
+
+        return attrs
+
+
 
 
 class LoginSerializer(serializers.Serializer):
@@ -81,8 +130,60 @@ class LoginSerializer(serializers.Serializer):
 
     def validate(self, data):
         user = authenticate(email=data['email'], password=data['password'])
-        if user and user.is_active:
-            return user
-        raise serializers.ValidationError("Incorrect Credentials")
+        if not user:
+            raise serializers.ValidationError("Incorrect credentials")
+        if not user.is_active:
+            raise serializers.ValidationError("Please verify your email first")
+
+        refresh = RefreshToken.for_user(user)
+
+        data['refresh'] = str(refresh)
+        data['access'] = str(refresh.access_token)
+        data['user'] = UsersSerializer(user).data
+        return data
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    username_or_email = serializers.CharField(max_length=255)
+
+    def validate_username_or_email(self, value):
+        # Sử dụng validate_username_or_email để xác thực người dùng và lấy đối tượng user
+        user = validate_username_or_email(value)
+        # Gửi mã xác minh đến email của người dùng
+        send_verification_email(user.email, user.verify_code)
+        return value
+
+
+class PasswordResetVerifiedSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=40)
+    password = serializers.CharField(max_length=128)
+
+    def validate(self, attrs):
+        code = attrs.get('code')
+        password = attrs.get('password')
+        try:
+            user = Users.objects.get(verify_code=code)
+        except Users.objects.DoesNotExist:
+            raise serializers.ValidationError({'code': 'Invalid verification code.'})
+
+        user.set_password(password)
+        user.verify_code = ''
+        user.save()
+
+        return attrs
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    password = serializers.CharField(max_length=128)
+
+
+class EmailChangeSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=255)
+
+
+class EmailChangeVerifySerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=255)
+
+
 
 

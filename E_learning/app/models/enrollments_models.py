@@ -1,3 +1,5 @@
+from datetime import timezone
+
 from django.db import models
 
 from E_learning.app.contants import StatusEnum
