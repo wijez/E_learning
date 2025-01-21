@@ -1,6 +1,6 @@
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 
 from E_learning.app.models import Lessons, Courses
@@ -12,11 +12,8 @@ class LessonViewSet(BaseUserViewSet):
 
     queryset = Lessons.objects.all()
     serializer_class = LessonsSerializer
-    @swagger_auto_schema(
-        request_body=LessonsSerializer,
-        responses={status.HTTP_200_OK: openapi.Response('Verification code sent to email.'),
-                   status.HTTP_400_BAD_REQUEST: 'Validation errors'}
-    )
+    parser_classes = (MultiPartParser, FormParser)
+
     def filter_queryset(self, queryset):
         queryset = queryset.filter(course__user=self.request.user).order_by('created_at')
         return queryset

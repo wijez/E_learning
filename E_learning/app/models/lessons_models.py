@@ -7,7 +7,7 @@ class Lessons(models.Model):
     title = models.CharField(max_length=200)
     content = models.TextField()
     video_url = models.URLField(blank=True, null=True)
-    img_url = models.ImageField()
+    img_url = models.URLField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

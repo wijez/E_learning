@@ -12,7 +12,10 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from datetime import timedelta
 from pathlib import Path
 import os
+
 from dotenv import load_dotenv
+
+from E_learning.app.config.cloudinary_config import setup_cloudinary
 
 load_dotenv()
 
@@ -44,6 +47,10 @@ INSTALLED_APPS = [
     'drf_yasg',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    'cloudinary_storage',
+    'cloudinary',
+    'corsheaders',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -51,11 +58,15 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:8000",
+]
 ROOT_URLCONF = 'E_learning.urls'
 
 TEMPLATES = [
@@ -102,12 +113,18 @@ SWAGGER_SETTINGS = {
 }
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+    ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10
 }
@@ -161,6 +178,9 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FORM_EMAIL')
 
+setup_cloudinary()
+# Set Cloudinary as the default storage
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
@@ -196,8 +216,9 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static/'),
 )
 STATIC_URL = 'static/'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 

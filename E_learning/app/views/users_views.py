@@ -14,21 +14,25 @@ class UsersViewSet(viewsets.ModelViewSet):
     permission_classes = [CustomUserCreationPermission, permissions.IsAuthenticated]
 
     def get_permissions(self):
+        user = self.request.user
+        if isinstance(user, AnonymousUser):
+            return [permissions.IsAuthenticated()]
+
         if self.action in ['create']:
-            if self.request.user.is_superuser:
-                print("superuser", self.request.user.is_superuser)
+            if user.is_superuser:
+                print("superuser", user.is_superuser)
                 return [permissions.IsAuthenticated(), IsRole(RoleEnum.SUPER_USER.value)]
-            elif self.request.user.role == RoleEnum.ADMIN.value:
+            elif user.role == RoleEnum.ADMIN.value:
                 return [permissions.IsAuthenticated(), IsRole(RoleEnum.ADMIN.value)]
             else:
                 return [permissions.IsAuthenticated()]
 
         if self.action in ['update', 'partial_update', 'destroy']:
-            if self.request.user.is_superuser:
+            if user.is_superuser:
                 return [permissions.IsAuthenticated(), IsRole(RoleEnum.SUPER_USER.value)]
-            elif self.request.user.role == RoleEnum.ADMIN.value:
+            elif user.role == RoleEnum.ADMIN.value:
                 return [permissions.IsAuthenticated(), IsRole(RoleEnum.ADMIN.value)]
-            elif self.request.user.role == RoleEnum.LECTURER.value:
+            elif user.role == RoleEnum.LECTURER.value:
                 return [permissions.IsAuthenticated(), IsRole(RoleEnum.LECTURER.value)]
 
         return [permissions.IsAuthenticated()]
